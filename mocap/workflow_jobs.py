@@ -85,7 +85,7 @@ def export_row(project, kind, source, target, name, options, *, people_root=None
             if key in options:
                 row[key] = options[key]
     for key in ('place_at_origin', 'symmetric_rest'):
-        row[key] = options.get(key, False) and fmt in ('fbx', 'bvh')
+        row[key] = options.get(key, False) and fmt in ('fbx', 'bvh', 'max')
     row['origin_group'] = str(Path(project).resolve()) if person_id is None else f'person:{person_id}'
     for key, default in (('animate_camera', True), ('background_refine', False), ('camera_translation_scale', 1.)):
         row[key] = options.get(key, default)

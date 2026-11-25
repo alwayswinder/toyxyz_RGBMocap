@@ -37,6 +37,7 @@ __pycache__/
 /cache/
 /character_scenes/
 /artifacts/
+/exports/
 /experiments/
 /tests/
 /config/local.json
@@ -61,6 +62,8 @@ __pycache__/
 *.webm
 *.fbx
 *.bvh
+*.max
+*.bip
 *.blend*
 *.vrm
 *.pmx

@@ -1,4 +1,4 @@
-"""Derived FBX/BVH saving with optional face sidecars."""
+"""Derived FBX/BVH/Max saving with optional face sidecars."""
 def main(emit):
     import argparse,sys,time
     from pathlib import Path
@@ -12,9 +12,10 @@ def main(emit):
         sidecars=plan(args.output,stage)
         if stage=='save_fbx':
             from .fbx_export import run
+            count=run(args.output,emit)
         else:
             from .export_copy import run
-        count=run(args.output,emit)
+            count=run(args.output,emit,max_scene=stage=='save_max')
         publish(sidecars,emit)
     except Exception as error:
         import traceback

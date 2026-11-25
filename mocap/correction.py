@@ -290,7 +290,7 @@ airborne intervals, and split anchors when the source intentionally travels.
     return active,anchors,offsets,shift,floor,segments
 
 
-def correct_arrays(rest, root, quat, probes, probabilities, fps=30., floor=None, core=CORE, output=None, emit=lambda *a,**k:None, preset='normal',contact_ranges=None,pelvis_offset=0.,mode='flat',foot_enabled=True):
+def correct_arrays(rest, root, quat, probes, probabilities, fps=30., floor=None, core=CORE, output=None, emit=lambda *a,**k:None, preset='normal',contact_ranges=None,pelvis_offset=0.,mode='flat',foot_enabled=True, *, smooth_root_xz=False):
     from .correction_settings import correction_options
     pelvis_offset=correction_options({'pelvis_offset':pelvis_offset})['pelvis_offset']
     n=len(root)
@@ -318,6 +318,9 @@ def correct_arrays(rest, root, quat, probes, probabilities, fps=30., floor=None,
             'max_contact_goal_error_m':0.,'max_ankle_global_change_deg':0.,'rejected_knee_frames':0,'straight_knee_support_frames':0,
             'method':'Original one-frame pose retained','bypassed':'fewer than two frames',
             'warning':'One-frame clip: original pose retained. Temporal foot locking needs at least two frames.'}
+    if smooth_root_xz:
+        from _MyTools.correction.root_smoothing import smooth_horizontal_shift
+        smooth_horizontal_shift(shift, fps)
     native=backend()
     if getattr(native,'rgb_mocap_anatomical_version',0)!=1:
         raise RuntimeError('Motion Correction runtime is outdated. Reinstall the updated app.')
@@ -634,7 +637,8 @@ def run(project,emit,result):
                     probes[start:end]=geometry.sample(roots[start:end],quats[start:end])[0]
                 _,_,report=correct_arrays(geometry.rest[:22],roots,quats,probes,probabilities,fps,floor,
                     output=(out_roots,out_quats),emit=emit,preset=preset,contact_ranges=contact_ranges,
-                    pelvis_offset=options['pelvis_offset'],mode=options['mode'],foot_enabled=options['foot_lock'])
+                    pelvis_offset=options['pelvis_offset'],mode=options['mode'],foot_enabled=options['foot_lock'],
+                    smooth_root_xz=options.get('smooth_root_xz',False))
                 from .hand_lock import apply as apply_hands
                 report['hand_lock']=apply_hands(geometry.rest[:22],roots,quats,out_roots,out_quats,geometry.palm_offsets,fps,options['mode'],report['floor'],preset,hand_ranges,options['hand_lock'],emit)
                 report['warning']=' '.join(filter(None,(report['warning'],report['hand_lock']['warning'])))

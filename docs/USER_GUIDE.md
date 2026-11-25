@@ -1007,7 +1007,8 @@ It uses the existing Blender runtime and does not include motion or the human me
 ## FBX and Blender
 
 **File → Export...** opens the options for the selected source model.
-For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)** or
+For SMPL-based motion, choose **FBX (.fbx)**, **BVH (.bvh)**,
+**3ds Max Biped scene (.max)** or
 **Blender project + video (.blend)**. The optional leading reference frame defaults off.
 For **FBX profile → Generic / Blender**, choose **Rest pose → T-pose**
 (default) or **A-pose**.
@@ -1087,19 +1088,28 @@ and chosen takes. **Continue...** or **Save** remembers the restored preferences
 
 BVH uses the same 52-bone hierarchy, metre units and Y up, including finger bones
 and terminal tips. Import into Blender with **Scale 1 / Forward -Z / Up Y**.
-The **3ds Max Biped** profile follows the PR #18 conversion: it uses Character
+The **3ds Max Biped** profile extends the PR #18 conversion. It uses Character
 Studio names (for example, Spine becomes Chest and LeftArm becomes LeftShoulder)
-and uniform **ZXY** rotation channels. All 52 joints, fingers, offsets, terminal
-tips and keyed poses are retained, with no unit conversion or source-cache edits.
-Changing Euler order can change interpolation between keys. Use Generic/Blender
-when preserving the existing channel encoding is important. The optional leading
+and uniform **ZXY** rotation channels. It retains the 52-joint hierarchy, metre
+units and terminal tips, and calibrates wrist and finger channels for Character
+Studio. Use **Generic / Blender** with other BVH readers. The optional leading
 T-pose works with either profile and retains the first motion frame's root position.
 
 In 3ds Max, create a Biped and load the file through **Motion > Motion Capture**.
 See [Autodesk's BVH import steps](https://download.autodesk.com/global/docs/motionbuilder2014/en_us/files/Importing_Importing_.bvh_files_into_3ds_Max.htm).
-This compatibility profile was checked numerically and imported in Blender;
-3ds Max itself was not available for validation. Biped's own retargeting and limb
-constraints may affect the result.
+
+Choose **3ds Max Biped scene (.max)** to save one animated Biped scene per
+selected SMPL take. RGB MoCap converts offsets and root translation to
+centimetres before importing the calibrated BVH in a separate 3ds Max batch
+process. T-pose, **Place at origin** and **Symmetrical rest pose** are available.
+The scene contains the Biped skeleton and animation. When merging into an
+existing scene, extend its time range to include the animation.
+
+Scene export requires an installed and activated 3ds Max and an integer
+frame rate. Set `RGB_MOCAP_3DSMAX_BATCH` to the full path of
+`3dsmaxbatch.exe` for a custom installation. Hand calibration was measured with
+the default five-finger, three-link Biped in 3ds Max 2026.3. See the
+[BVH conversion command](../_MyTools/UPSTREAM_MERGE.md#bvh-转-max).
 
 BVH cannot store FBX Pre/PostRotation or arbitrary rest-bone roll; the rest axes
 can consequently look different. Use FBX when explicit rest transforms are needed.

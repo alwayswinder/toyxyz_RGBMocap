@@ -26,6 +26,7 @@ class SourceExportDialog(QDialog):
         form=QFormLayout();form.setVerticalSpacing(12);layout.addLayout(form)
         self.format=QComboBox()
         self.format.addItem('FBX (.fbx)','fbx');self.format.addItem('BVH (.bvh)','bvh')
+        if self.model != 'gemx':self.format.addItem('3ds Max Biped scene (.max)', 'max')
         self.format.addItem('Blender project + video (.blend)','blend')
         form.addRow('Format',self.format)
         self.take_scope=QComboBox()
@@ -50,7 +51,7 @@ class SourceExportDialog(QDialog):
         form.addRow(self.blend_layout_label, self.blend_layout)
         self.profile=QComboBox();self.profile.addItem('Generic / Blender','generic')
         if self.model!='gemx':self.profile.addItem('3ds Max Biped','biped')
-        self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names and uniform ZXY rotations. Both keep metre units and Y up.')
+        self.profile.setToolTip('Generic / Blender keeps anatomical names and original rotation orders. 3ds Max Biped uses Character Studio names, ZXY channels and calibrated wrist/finger rotations for the Max importer. Use that profile only in Biped. Both keep metre units and Y up.')
         self.profile_label=QLabel('BVH profile');form.addRow(self.profile_label,self.profile)
         self.fbx_profile = QComboBox()
         self.fbx_profile.addItem('Generic / Blender', 'generic')
@@ -118,7 +119,7 @@ class SourceExportDialog(QDialog):
         self.initial_choices = control_values(self.resettable_controls())
         self.initial_camera_scale = self.translation_scale.value()
         self.kept_choices=restore(self.remembered_controls(),CHOICES)
-        for signal in (self.format.currentIndexChanged,self.fbx_profile.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
+        for signal in (self.format.currentIndexChanged,self.profile.currentIndexChanged,self.fbx_profile.currentIndexChanged,self.fbx_rest_pose.currentIndexChanged,self.blend_layout.currentIndexChanged,self.whole_scene.toggled,self.animate_camera.toggled):signal.connect(self.update_format)
         self.update_format()
     def update_format(self):
         fmt=self.format.currentData();blend=fmt=='blend';whole=blend and self.model=='mamma' and self.whole_scene.isChecked()
@@ -151,6 +152,14 @@ class SourceExportDialog(QDialog):
         self.scale_label.setVisible(camera);self.translation_scale.setVisible(camera);self.translation_scale.setEnabled(self.animate_camera.isChecked())
         if mannequin:
             self.note.setText('Exports animation for SK_Mannequin. Include the mesh to import into a project without that skeleton.')
+            self.layout().activate()
+            return
+        if fmt == 'max':
+            self.note.setText('Converts the selected motion into an animated Biped scene, with calibrated wrist and finger channels. Requires an installed, activated 3ds Max. Each take is a separate .max file. Target proportions and Biped limb constraints can affect the result.')
+            self.layout().activate()
+            return
+        if fmt == 'bvh' and self.profile.currentData() == 'biped':
+            self.note.setText('Exports BVH for the 3ds Max Biped importer, including wrist and finger calibration. Use Generic / Blender for other BVH readers. Units are metres, Y up. The optional T-pose is added before the motion.')
             self.layout().activate()
             return
         if self.model=='gemx':
@@ -188,6 +197,14 @@ class SourceExportDialog(QDialog):
             self.validation_error.hide()
 
     def accept(self):
+        if self.format.currentData() == 'max':
+            try:
+                from _MyTools.export.max_export import executable
+                executable()
+            except (OSError, ValueError) as error:
+                self.validation_error.setPlainText(str(error))
+                self.validation_error.show()
+                return
         if self.validate is not None:
             try:
                 self.checked_exports=self.validate(self.options())
@@ -230,7 +247,7 @@ class SourceExportDialog(QDialog):
         if self.model=='gemx' and fmt=='blend':
             return dict(format='blend',animate_camera=False,blend_layout=self.blend_layout.currentData(),
                         **selection)
-        value=dict(format='blend_scene' if whole else fmt,bvh_profile=self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole,**selection)
+        value=dict(format='blend_scene' if whole else fmt,bvh_profile='biped' if fmt=='max' else self.profile.currentData() if fmt=='bvh' else 'generic',prepend_tpose=self.tpose.isChecked() and not whole,**selection)
         if fmt == 'fbx':
             value['fbx_profile'] = self.fbx_profile.currentData()
             if value['fbx_profile'] == 'ue5_mannequin':
@@ -240,7 +257,7 @@ class SourceExportDialog(QDialog):
                             place_at_origin=False, symmetric_rest=False)
             value['fbx_compatibility'] = self.fbx_compatibility.isChecked()
             value['fbx_rest_pose'] = self.fbx_rest_pose.currentData()
-        value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh'))
+        value.update(place_at_origin=self.place_at_origin.isChecked() and fmt in ('fbx','bvh','max'),symmetric_rest=self.model!='gemx' and self.symmetric_rest.isChecked() and fmt in ('fbx','bvh','max'))
         if fmt=='blend':value.update(blend_layout=self.blend_layout.currentData(),animate_camera=self.animate_camera.isChecked(),background_refine=self.background_refine.isChecked() and self.animate_camera.isChecked() and self.model in ('flowhmr','exmr'),camera_translation_scale=self.translation_scale.value())
         return value
 

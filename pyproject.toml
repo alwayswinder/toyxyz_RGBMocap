@@ -10,4 +10,7 @@ license = {file = "LICENSE"}
 requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]
-include = ["mocap*"]
+include = ["mocap*", "_MyTools*"]
+
+[tool.setuptools.package-data]
+"_MyTools.export" = ["*.ms"]

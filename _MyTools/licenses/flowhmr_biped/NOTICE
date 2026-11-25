@@ -1,0 +1,13 @@
+RGB MoCap's _MyTools/export/biped_fingers.py adapts the Biped wrist/finger encoder
+from FlowHMR-Windows, inspected 2026-11-25.
+Source: https://github.com/xiaoerofficial021-collab/FlowHMR-Windows
+Upstream license: Apache License 2.0; reproduced in LICENSE in this directory.
+
+The calibration constants were measured against the default 3ds Max 2026.3
+five-finger, three-link Biped. RGB MoCap resolves source joints by BVH names
+and calibrates from each exported rest hierarchy, including terminal tips.
+The measured single-axis regression probes are in
+_MyTools/tests/fixtures/biped_2026_finger_probes.json.
+
+Autodesk 3ds Max is separately installed and licensed. No Autodesk binaries,
+user motion, video or body model files are included with this adaptation.

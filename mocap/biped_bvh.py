@@ -1,6 +1,7 @@
-"""PR #18-derived Character Studio naming and uniform ZXY export encoding.
+"""Character Studio naming, ZXY encoding and calibrated Biped hand channels.
 
-Converts only the exported copy; source hierarchy offsets and keyed poses remain.
+Only exported copies change. Biped-specific hand channels compensate its reader;
+they must not be interpreted as anatomical rotations by a generic BVH reader.
 """
 import warnings
 import numpy as np
@@ -22,10 +23,11 @@ def bone_names():
 
 
 def convert(inp,out,progress=lambda:None):
+    from .export_options import read_header
+    from _MyTools.export.biped_fingers import geometry, encode_fingers
+    lines,_=read_header(inp)
     mapping=bone_names();orders=[];seen=[]
-    for _ in range(4096):
-        line=inp.readline(65537)
-        if not line or len(line)>65536:raise ValueError('Invalid BVH hierarchy')
+    for line in lines:
         tokens=line.split()
         if tokens[:1] in ([b'ROOT'],[b'JOINT']):
             if len(tokens)!=2:raise ValueError('Invalid BVH joint declaration')
@@ -51,8 +53,8 @@ def convert(inp,out,progress=lambda:None):
             line=indent+(b'CHANNELS 6 Xposition Yposition Zposition ' if len(orders)==1 else b'CHANNELS 3 ')+b'Zrotation Xrotation Yrotation\n'
         out.write(line)
         if line.strip()==b'MOTION':break
-    else:raise ValueError('BVH hierarchy too large')
     if len(orders)!=52 or len(seen)!=52 or set(seen)!=set(mapping):raise ValueError('Expected complete source skeleton')
+    names,joints,ends=geometry(lines)
     count_line=inp.readline(256);time_line=inp.readline(256)
     if not count_line.startswith(b'Frames:') or not time_line.startswith(b'Frame Time:'):raise ValueError('Invalid BVH header')
     count=int(count_line.split(b':')[1]);step=float(time_line.split(b':')[1])
@@ -69,11 +71,14 @@ def convert(inp,out,progress=lambda:None):
             rows.append(np.asarray(fields,dtype=float))
         values=np.asarray(rows)
         if not np.isfinite(values).all():raise ValueError('Non-finite BVH motion')
-        for j,order in enumerate(orders):
+        rotations=np.stack([Rotation.from_euler(order,values[:,3+3*j:6+3*j],degrees=True).as_matrix()
+                            for j,order in enumerate(orders)],axis=1)
+        rotations=encode_fingers(rotations,joints,ends,names)
+        for j in range(52):
             column=slice(3+3*j,6+3*j)
             with warnings.catch_warnings():
                 warnings.filterwarnings('ignore',message='Gimbal lock detected')
-                angles=Rotation.from_euler(order,values[:,column],degrees=True).as_euler('ZXY')
+                angles=Rotation.from_matrix(rotations[:,j]).as_euler('ZXY')
             for index,angle in enumerate(angles):
                 alternative=angle.copy();alternative[0]+=np.pi
                 alternative[1]=np.pi-alternative[1];alternative[2]+=np.pi

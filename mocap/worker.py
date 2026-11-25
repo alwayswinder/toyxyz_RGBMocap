@@ -193,6 +193,10 @@ def main() -> int:
                                         "htd_refine": result_options(args.result)[0], "footmr": result_options(args.result)[1], 'handflow':has_handflow(args.result)}
                 if args.result.startswith('corrected_'):
                     manifest['correction']={'auto_floor':args.floor is None,'floor':float(args.floor or 0),'preset':args.correction_preset,'pelvis_offset':args.pelvis_offset,'mode':args.correction_mode,'foot_lock':bool(args.foot_lock),'hand_lock':bool(args.hand_lock)}
+                    if args.motion_tool == 'exmr':
+                        from _MyTools.correction.root_smoothing import requested
+                        if requested():
+                            manifest['correction']['smooth_root_xz'] = True
             atomic_json(project / "project.json", manifest)
             emit("prepared", project=str(project), manifest={k: v for k, v in manifest.items() if k != "original_times"})
             return 0

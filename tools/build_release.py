@@ -19,7 +19,7 @@ def source_resources():
 def copy_tree(source,dest):
     allowed=source_resources()
     excluded={'__pycache__','.git','checkpoints','ckpts','outputs','inputs','cache','.cache','build','dist','bin','tests','experiments'}
-    forbidden={'.pt','.pth','.ckpt','.safetensors','.onnx','.npz','.npy','.pkl','.mp4','.avi','.fbx','.bvh','.blend','.exe','.dll','.pyd','.pyc','.pyo'}
+    forbidden={'.pt','.pth','.ckpt','.safetensors','.onnx','.npz','.npy','.pkl','.mp4','.avi','.fbx','.bvh','.bip','.max','.blend','.exe','.dll','.pyd','.pyc','.pyo'}
     def ignore(folder,names):
         return [n for n in names if n.lower() in excluded or (Path(folder)/n).is_symlink() or (Path(n).suffix.lower() in forbidden and (Path(folder)/n).resolve() not in allowed) or n.lower() in {'agents.md','claude.md','gemini.md','codex.md'}]
     shutil.copytree(source,dest,ignore=ignore,dirs_exist_ok=True)
@@ -55,8 +55,10 @@ def main():
     for name in ['worker_boot.py','scene_boot.py','README.md','LICENSE','THIRD_PARTY_NOTICES.md']:
         shutil.copy2(ROOT/name,app/name)
     for source in cache_inputs:shutil.copy2(source,app/source.name)
-    for name in ['mocap','native_compat','assets','third_party','docs']:
+    for name in ['mocap','_MyTools','native_compat','assets','third_party','docs']:
         copy_tree(ROOT/name,app/name)
+    (app/'tools').mkdir(exist_ok=True)
+    shutil.copy2(ROOT/'tools/bvh_to_max.py',app/'tools/bvh_to_max.py')
     # Auxiliary body-derived data is supplied separately, hash checked and never in Git.
     stage(a.asset_root,app)
     character=stage_blender(blender,app)

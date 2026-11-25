@@ -35,6 +35,7 @@ STAGES['rig']='Prepare Bone Preview'
 STAGES['save_fbx']='Save FBX'
 STAGES['stream_reference']='Export Live Link Reference Rig'
 STAGES['copy_bvh']='Save BVH'
+STAGES['save_max']='Save 3ds Max Biped Scene'
 STAGES['save_blend']='Save Blender Project'
 STAGES['save_blend_scene']='Save MAMMA Blender Scene'
 STAGES["footmr"] = "Refine Ankles / FootMR"
@@ -1633,7 +1634,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                                    (f' · Elapsed {duration(elapsed)}' if elapsed is not None else ''))
             self.progress.setRange(0, 100)
             self.progress.setValue(0 if self.failed or self.cancelled else 100)
-            if self.current_stage in ('save_fbx','copy_bvh','save_blend','save_blend_scene','stream_reference'):
+            if self.current_stage in ('save_fbx','copy_bvh','save_max','save_blend','save_blend_scene','stream_reference'):
                 # Saving a derived file does not replace scene/preview data.
                 # Reloading the people scene here moves a following camera.
                 if not self.failed and not self.cancelled:
@@ -2256,13 +2257,16 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         destinations = list(dict.fromkeys(target for _, _, _, target in files))
         atomic_json(request, dict(target=str(destinations[0]), takes=rows) if combined else rows)
         self._motion_export_targets = [str(target) for target in destinations]
-        stage = 'copy_bvh' if fmt == 'bvh' else 'save_fbx'
+        stage = {'bvh': 'copy_bvh', 'max': 'save_max'}.get(fmt, 'save_fbx')
         if fmt == 'blend':
             from .blend_support import partial
             stage = 'save_blend'
             staging = [partial(target.parent, request) for target in destinations]
         else:
             staging = [target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial') for target in destinations]
+            if fmt == 'max':
+                from _MyTools.export.max_export import staging as max_staging
+                staging.extend(max_staging(target, request) for target in destinations)
         self._fbx_export_cleanup = (request, staging)
         self.start_jobs([(stage,['--project',str(self.project),'--output',str(request)])])
 

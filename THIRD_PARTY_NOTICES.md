@@ -120,6 +120,12 @@ separately through Model Manager under CC BY 4.0; the upstream
 LICENSE-WEIGHTS is retained with support files. No TensorRT engine/runtime is distributed.
 
 
+## Biped BVH hand calibration
+
+The Biped wrist and finger encoder adapts FlowHMR-Windows' Max 2026.3
+calibration under Apache-2.0. See the [license](_MyTools/licenses/flowhmr_biped/LICENSE)
+and [provenance](_MyTools/licenses/flowhmr_biped/NOTICE).
+
 ## Optional Unreal Live Link sender
 
 The optional provider/commandlet source is in

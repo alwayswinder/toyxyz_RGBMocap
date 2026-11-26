@@ -1,6 +1,8 @@
 # RGB MoCap 上游合并说明
 
-本地扩展基于 `a7fde78`。`export/` 保存 Biped 手腕和手指校准、BVH 转 Max 的 Python 实现及 MAXScript。`correction/` 保存 AutoGenerate 使用的根位移平滑。`tests/` 保存导出回归测试。
+本地扩展基于 `174fe46`。`export/` 保存 Biped 手腕和手指校准、BVH 转 Max 的 Python 实现及 MAXScript。`correction/` 保存 AutoGenerate 使用的根位移平滑。`tests/` 保存导出回归测试。
+
+上游在 `174fe46` 把 PEAR 实时跟踪整体迁到 [RGB MoCap Live](https://github.com/toyxyz/rgbmocap_live)。本地跟随该决定：`mocap/pear/`、PEAR 模型行、`pear_ui`/`pear_runtime` 与 `tools/setup_pear.py` 不再存在，遗留安装由 `mocap/legacy_pear_removal.py` 清理；相机对齐 overlay 现在只供 MAMMA gravity 使用。
 
 ## 原仓库修改点
 
@@ -11,7 +13,7 @@
 | `mocap/worker_progress.py`、`mocap/source_export_worker.py`、`mocap/export_copy.py` | `save_max` 复用 BVH worker，先生成 Biped BVH，再转换暂存文件。发布前检查源动作版本和场景位置，并保留原有覆盖策略。 |
 | `mocap/worker.py`、`mocap/correction_settings.py`、`mocap/correction.py` | ExMR 的 `prepare` 在 `RGB_MOCAP_SMOOTH_ROOT_XZ=1` 时记录修正选项，接触求解前平滑水平骨盆补偿。普通修正默认关闭。 |
 | `tools/bvh_to_max.py`、`pyproject.toml`、`tools/build_release.py` | 兼容 AutoGenerate 现有命令路径，发布包携带 `_MyTools` 和 MAXScript。 |
-| `.gitignore`、`tools/check_source.py`、`SOURCE_MANIFEST.json`、`THIRD_PARTY_NOTICES.md`、`docs/USER_GUIDE.md` | 忽略本地导出，审查发布源文件，更新清单、授权和导出说明。 |
+| `.gitignore`、`tools/check_source.py`、`SOURCE_MANIFEST.json`、`THIRD_PARTY_NOTICES.md`、`docs/USER_GUIDE.md` | 忽略本地导出，审查发布源文件，更新清单、授权和导出说明。`check_source.py` 在跳过 `runtime_camera_alignment` 的同时保留 `runtime_pear`，并把 `.max`/`.bip` 视为生成物。 |
 
 遇到冲突时，先采用上游的任务调度、相机选项和导出发布逻辑，再接回表中选项和调用。检查桌面菜单、worker 路由、安装包文件和自动化兼容入口。
 
